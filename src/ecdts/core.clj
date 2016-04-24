@@ -4,10 +4,13 @@
 (set! *warn-on-reflection* true)
 
 (defprotocol PIncrementable
+  "Implementation detail. Needed because we can only mutate (set!)
+  inside of deftype for thread safety reasons."
   (-inc [this]))
 
 (defprotocol PMergeable
-  (-merge [this other]))
+  "Protocol to merge a thread-local version of a datatype into the global version"
+  (-merge [global local]))
 
 (deftype ECCounter [^:unsynchronized-mutable ^long a
                     ^:unsynchronized-mutable ^long b]
@@ -169,6 +172,8 @@
 
 
 (defprotocol PConjable
+  "Implementation detail. Needed because we can only mutate (set!)
+  inside of deftype for thread safety reasons."
   (-conj [this elem]))
 
 (defn conj!
@@ -179,10 +184,7 @@
 (deftype ECAddOnlyBag [^:unsynchronized-mutable l
                        ^:unsynchronized-mutable appender]
   clojure.lang.IDeref
-  (deref [this]
-    (locking l ;; just to be sure
-      (locking appender
-        (concat appender l))))
+  (deref [this] (concat appender l))
   PMergeable
   (-merge [this other]
     (locking this
