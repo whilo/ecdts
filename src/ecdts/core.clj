@@ -12,7 +12,7 @@
   "Protocol to merge a thread-local version of a datatype into the global version"
   (-merge [global local]))
 
-(deftype ECCounter [^:unsynchronized-mutable ^long a
+(deftype ECCounter [^:volatile-mutable ^long a ;; keep the global value synchronized
                     ^:unsynchronized-mutable ^long b]
   clojure.lang.IDeref
   (deref [this] (+ a b))
@@ -31,7 +31,9 @@
 
 (defn counter
   "Creates an eventual consistent increment only counter. Optionally
-  you can initialize a thread-local version with a value."
+  you can initialize a thread-local version with a value. Derefencing
+  and incrementing are not synchronized for performance reasons, so
+  these operations are only valid in the thread-local context."
   ([] (counter 0))
   ([init-value]
    (ECCounter. 0 init-value)))
@@ -181,7 +183,7 @@
   [bag elem]
   (-conj bag elem))
 
-(deftype ECAddOnlyBag [^:unsynchronized-mutable l
+(deftype ECAddOnlyBag [^:volatile-mutable l
                        ^:unsynchronized-mutable appender]
   clojure.lang.IDeref
   (deref [this] (concat appender l))
@@ -196,13 +198,13 @@
           (set! (.-appender other) '())
           new-list))))
   PConjable
-  (-conj [this elem]
-    (locking appender
-      (set! appender (cons elem appender)))))
+  (-conj [this elem] (set! appender (conj appender elem))))
 
 (defn add-only-bag
-  "Creates an AddOnlyBag. Optionally you can initialize a
-  thread-local version with a seq value."
+  "Creates an AddOnlyBag. Optionally you can initialize a thread-local
+  version with a seq value. Derefencing and conjing are not
+  synchronized for performance reasons, so these operations are only
+  valid in the thread-local context."
   ([] (add-only-bag '()))
   ([init-values]
    (ECAddOnlyBag. '() init-values)))

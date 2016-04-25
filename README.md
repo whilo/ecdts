@@ -11,15 +11,19 @@ merge the thread-local var from time to time with the global state.
 
 While I haven't had a use case for them yet, I found the research
 interesting and wanted to benchmark the approach against the Clojure
-STM. I think the datatypes become interesting in many-core scenarios
-where you have more than 10 (maybe 100+) threads hammering on a
-datastructure.
+STM. Consider the implementation experimental for now. I think the
+datatypes become interesting in many-core scenarios where you have
+more than 10 (maybe 100+) threads hammering on a datastructure. Since
+massive parallelism is a primary design goal of Clojure, I think they
+are worth investigating then.
+
+## Bag
 
 I am not sure about the access semantics for the bag, it would be very
 well possible to use something different than sequences there,
 e.g. sets or vectors, since I haven't used Cons cells (Clojure doesn't
-use them), but Clojure's persistent lists which also have constant
-time concatenation due to lazyness.
+use them much), but Clojure's persistent lists which also have
+constant time concatenation due to lazyness.
 
 You will still have `O(#elements)` worse case access time for other
 collections though, but subsequent accesses could benefit from a
@@ -31,6 +35,10 @@ you have a use-case.
 ## Usage
 
 [![Clojars Project](http://clojars.org/es.topiq/ecdts/latest-version.svg)](http://clojars.org/es.topiq/ecdts)
+
+The general idea is that you create a thread-local version of a
+datatype for each of you threads and a global version with which you
+merge in the desired intervals.
 
 Example benchmark for the counter. You always have a global version,
 similar to a Clojure atom, which you merge into from time to time. The
@@ -110,6 +118,8 @@ value. Read the paper for details.
     (.start td))
 ~~~
 
+It is roughly 3 times as fast as the STM on my machine.
+
 The bag works similarly.
 
 ~~~clojure
@@ -181,6 +191,8 @@ The bag works similarly.
     (.start tc)
     (.start td))
 ~~~
+
+It is roughly 4 times faster on my machine.
 
 ## License
 

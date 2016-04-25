@@ -1,4 +1,4 @@
-(defproject es.topiq/ecdts "0.1.0-SNAPSHOT"
+(defproject es.topiq/ecdts "0.1.0"
   :description "Eventually consistent datatypes for Clojure."
   :url "https://github.com/whilo/ecdts"
   :license {:name "Eclipse Public License"
